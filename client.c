@@ -17,11 +17,33 @@ void * recv_message(void * arg);
 
 char message[BUFFSIZE];
 
+void * rcv(void * arg){
+	printf("rcv thread created!:");
+	int sock = (int)arg;
+	char buff[500];
+	int len;
+	while(1){
+		len = read(sock, buff, sizeof(buff));
+		if (len==-1){
+			printf("sock close\n");
+			break;
+		}
+		printf("%s", buff);
+	}
+	pthread_exit(0);
+	return 0;
+}
+
 int main(int argc, char **argv){
 	int sock;
 	struct sockaddr_in serv_addr;
 	pthread_t snd_thread, rcv_thread;
 	void* thread_result;
+	
+	if(argc<2){
+		printf("you have to enter ID\n");
+		return 0;
+	};
 
 	sock = socket(PF_INET, SOCK_STREAM, 0);
 	if(sock==-1){
@@ -52,8 +74,16 @@ int main(int argc, char **argv){
 	if(connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr))==-1){
 		printf("connect error");
 	}
-
-	unsigned char msg[100] = {0x01, 2, 3,4,5,6,1,2,3,4,2,1,2,3,0x0c};
+   	printf("argc %d", argc); 
+		
+	char id[100];
+	strcpy(id, argv[1]);
+	printf("id: %s\n", id);
+	char msg[1000];
+	char chat[100];
+	//sprintf(msg,"[%s]: hello world\n", id);
+	
+	//unsigned char msg[100] = {0x01, 2, 3,4,5,6,1,2,3,4,2,1,2,3,0x0c};
 	
 
 //	pthread_create(&snd_thread, NULL, send_message, (void*)sock);
@@ -61,14 +91,19 @@ int main(int argc, char **argv){
 //	pthread_join(snd_thread, &thread_result);
 //	pthread_join(snd_thread, &thread_result);
 	
-	
+	pthread_create(&rcv_thread, NULL, rcv, (void *)sock);
+	printf("while before");
 	while(1){
-		printf("send: ");
-		for (int i=0;i<15;i++){
-			printf("%02X", msg[i]);
-		}
+		//for (int i=0;i<15;i++){
+		//	printf("%02X", msg[i]);
+		//}
+		printf("chat: ");
+		gets(chat); //fgets
+		sprintf(msg, "[%s]: %s\n", id, chat);
+		
+		printf("send: %s", msg);
 		printf("\n");
-		write(sock, msg, 15);
+		write(sock, msg, strlen(msg)+1);
 		sleep(1);
 	}
 
